@@ -1,5 +1,0 @@
-python app.py --host=0.0.0.0  <- usar isso para iniciar
-para acessar http://[endereço ip]:5000
-pip install -r requirements.txt <- para baixar
-instalar SQLite Viewer
-ngrok http 5000 
