@@ -190,7 +190,13 @@
 
       try {
         const devices = await codeReader.listVideoInputDevices();
-        const selectedDeviceId = devices[0].deviceId;
+
+        let backCamera = devices.find(d =>
+          d.label.toLowerCase().includes('back') ||
+          d.label.toLowerCase().includes('rear')
+        );
+
+        const selectedDeviceId = backCamera ? backCamera.deviceId : devices[0].deviceId;
 
         codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
           if (result) {
