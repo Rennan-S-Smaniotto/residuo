@@ -11,7 +11,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'registro.db')
 
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
-app.config['SQLALCHEMY_TRACK_MODIFICATIOMNS'] = False
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
@@ -103,8 +103,30 @@ def estornar():
 
 @app.route("/admin")
 def admin_page():
-    # Busca todos os registros ordenados por data
-    registros = Registro.query.order_by(Registro.data_hora.desc()).all()
+    query = Registro.query
+
+    # Captura filtros enviados pela URL
+    codigo = request.args.get("codigo")
+    material = request.args.get("material")
+    armazenamento = request.args.get("armazenamento")
+    data = request.args.get("data")
+
+    if codigo:
+        query = query.filter(Registro.codigo_barras.contains(codigo))
+    if material:
+        query = query.filter(Registro.material.contains(material))
+    if armazenamento:
+        query = query.filter(Registro.armazenamento == armazenamento)
+    if data:
+        try:
+            dt = datetime.strptime(data, "%Y-%m-%d")
+            dt_inicio = dt.replace(hour=0, minute=0, second=0)
+            dt_fim = dt.replace(hour=23, minute=59, second=59)
+            query = query.filter(Registro.data_hora >= dt_inicio, Registro.data_hora <= dt_fim)
+        except ValueError:
+            pass
+
+    registros = query.order_by(Registro.data_hora.desc()).all()
     return render_template("admin.html", registros=registros)
 
 @app.route("/admin/export")
