@@ -7,14 +7,16 @@ import os
 app = Flask(__name__)
 app.secret_key = "chave-secreta"  # Necessário para usar flash messages
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'registro.db')
-
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
+# ✅ Configuração do PostgreSQL no Render (External Database URL)
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    'postgresql://neondb_owner:npg_zA7aoX5hkRsG@ep-holy-darkness-acrf3mjk-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# ✅ Inicializando banco
 db = SQLAlchemy(app)
 
+# ✅ Modelo da Tabela
 class Registro(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo_barras = db.Column(db.String(100), nullable=False)
@@ -24,12 +26,12 @@ class Registro(db.Model):
     armazenamento = db.Column(db.String(100), nullable=False)
     data_hora = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ✅ Cria tabelas no Postgres se não existirem
 with app.app_context():
-    db.create_all()  # Cria as tabelas no banco de dados se não existirem
+    db.create_all()
 
 # Controle para só permitir estornar 1 vez
 pode_estornar = False
-
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -129,6 +131,7 @@ def admin_page():
     registros = query.order_by(Registro.data_hora.desc()).all()
     return render_template("admin.html", registros=registros)
 
+
 @app.route("/admin/export")
 def export_excel():
     # Pega todos os registros
@@ -145,8 +148,8 @@ def export_excel():
     } for r in registros]
 
     # Converte para DataFrame e salva temporário
+    excel_path = os.path.join(os.getcwd(), "registros_export.xlsx")
     df = pd.DataFrame(data)
-    excel_path = os.path.join(BASE_DIR, "registros_export.xlsx")
     df.to_excel(excel_path, index=False)
 
     # Retorna o arquivo para download
@@ -154,4 +157,5 @@ def export_excel():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # ✅ host='0.0.0.0' permite acesso via IP interno/externo
+    app.run(host='0.0.0.0', port=5000, debug=True)
